@@ -6,6 +6,12 @@ pipeline {
     }
 
     stages {
+        stage('Configure Git') {
+            steps {
+                sh 'git config --global --add safe.directory /var/jenkins_home/workspace/edadocker-ci'
+            }
+        }
+
         stage('Build and Start Jupyter Service') {
             steps {
                 sh 'docker-compose up -d --build'
