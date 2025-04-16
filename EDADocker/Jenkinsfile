@@ -1,0 +1,46 @@
+pipeline {
+    agent any
+
+    environment {
+        CONTAINER_NAME = 'edadocker-jupyter-1'
+    }
+
+    stages {
+        stage('Build and Start Jupyter Service') {
+            steps {
+                sh 'docker-compose up -d --build'
+            }
+        }
+
+        stage('Execute Notebook') {
+            steps {
+                script {
+                    // Run notebook execution inside the container
+                    sh "docker exec ${CONTAINER_NAME} jupyter nbconvert --to notebook --execute /home/jovyan/work/EDA_HeartDisease.ipynb --inplace"
+                }
+            }
+        }
+
+        stage('Archive Executed Notebook') {
+            steps {
+                script {
+                    sh "docker cp ${CONTAINER_NAME}:/home/jovyan/work/EDA_HeartDisease.ipynb ./EDA_HeartDisease.ipynb"
+                }
+                archiveArtifacts artifacts: 'EDA_HeartDisease.ipynb', fingerprint: true
+            }
+        }
+
+        stage('Shutdown') {
+            steps {
+                sh 'docker-compose down'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed. Cleaning Docker...'
+            sh 'docker system prune -f'
+        }
+    }
+}
