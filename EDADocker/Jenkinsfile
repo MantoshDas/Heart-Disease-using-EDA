@@ -2,51 +2,58 @@ pipeline {
     agent any
 
     environment {
-        CONTAINER_NAME = 'edadocker-jupyter-1'
+        COMPOSE_PROJECT_NAME = "edadocker"
+        COMPOSE_FILE = "EDADocker/docker-compose.yml"
     }
 
     stages {
-        stage('Configure Git') {
+        stage('Checkout Code') {
             steps {
-                sh 'git config --global --add safe.directory /var/jenkins_home/workspace/edadocker-ci'
+                git 'https://github.com/MantoshDas/Heart-Disease-using-EDA.git'
             }
         }
 
-        stage('Build and Start Jupyter Service') {
+        stage('Install Docker Compose (if needed)') {
             steps {
-                sh 'docker-compose up -d --build'
+                sh '''
+                if ! command -v docker-compose &> /dev/null
+                then
+                    echo "Installing Docker Compose..."
+                    sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                    sudo chmod +x /usr/local/bin/docker-compose
+                fi
+                '''
             }
         }
 
-        stage('Execute Notebook') {
+        stage('Build Docker Image') {
             steps {
-                script {
-                    // Run notebook execution inside the container
-                    sh "docker exec ${CONTAINER_NAME} jupyter nbconvert --to notebook --execute /home/jovyan/work/EDA_HeartDisease.ipynb --inplace"
+                dir('EDADocker') {
+                    sh 'docker-compose build'
                 }
             }
         }
 
-        stage('Archive Executed Notebook') {
+        stage('Run Docker Container') {
             steps {
-                script {
-                    sh "docker cp ${CONTAINER_NAME}:/home/jovyan/work/EDA_HeartDisease.ipynb ./EDA_HeartDisease.ipynb"
+                dir('EDADocker') {
+                    sh 'docker-compose up -d'
                 }
-                archiveArtifacts artifacts: 'EDA_HeartDisease.ipynb', fingerprint: true
             }
         }
 
-        stage('Shutdown') {
+        stage('Verify Container') {
             steps {
-                sh 'docker-compose down'
+                sh 'docker ps -a'
             }
         }
     }
 
     post {
         always {
-            echo 'Pipeline completed. Cleaning Docker...'
-            sh 'docker system prune -f'
+            dir('EDADocker') {
+                sh 'docker-compose down'
+            }
         }
     }
 }
