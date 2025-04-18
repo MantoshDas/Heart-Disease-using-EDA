@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         COMPOSE_PROJECT_NAME = "edadocker"
-        COMPOSE_FILE = "EDADocker/docker-compose.yml"
+        COMPOSE_FILE = "docker-compose.yml"
     }
 
     stages {
@@ -28,17 +28,13 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                dir('EDADocker') {
-                    sh 'docker-compose build'
-                }
+                sh 'docker-compose build'
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                dir('EDADocker') {
-                    sh 'docker-compose up -d'
-                }
+                sh 'docker-compose up -d'
             }
         }
 
@@ -51,9 +47,7 @@ pipeline {
 
     post {
         always {
-            dir('EDADocker') {
-                sh 'docker-compose down'
-            }
+            sh 'docker-compose down'
         }
     }
 }
