@@ -1,6 +1,7 @@
 services:
   jupyter:
     build: .
+    image: edadocker
     ports:
       - "8888:8888"
     volumes:
