@@ -5,7 +5,21 @@ pipeline {
         COMPOSE_PROJECT_NAME = "edadocker"
     }
 
+
     stages {
+        stage("docker login"){
+            steps{
+
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USR', passwordVariable: 'DOCKER_PASS')]){
+                    script{
+
+                        sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USR} --password-stdin"
+
+                    }
+                }
+
+            }
+        }
         stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/MantoshDas/Heart-Disease-using-EDA.git'
@@ -32,6 +46,17 @@ pipeline {
                 }
             }
         }
+        stage("Push to docker hub"){
+            steps{
+                echo "Pushing to docker hub"
+
+                sh "docker tag edadocker mann11/edadocker:latest"
+
+                sh "docker push mann11/edadocker:latest"
+
+            }
+        }
+
 
         stage('Run Docker Container') {
             steps {
